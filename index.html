@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Arrow — reaction game</title>
+  <title>Стрела — игра на реакцию</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; }
@@ -40,9 +40,15 @@
       margin-top: 1rem; font-size: 1rem; background: #333; color: #ccc;
     }
     .panel p.sub { margin-top: 1.2rem; color: #aaa; font-size: 1.1rem; }
+    #langBtn {
+      position: fixed; top: 10px; right: 14px; z-index: 10;
+      font-size: 1rem; padding: 6px 14px; border: 0; border-radius: 10px;
+      background: #333; color: #ccc;
+    }
   </style>
 </head>
 <body>
+  <button id="langBtn">EN</button>
   <div id="hud"><span id="hudL"></span><span id="hudR"></span></div>
   <div id="screen"></div>
   <script>
@@ -79,6 +85,39 @@
     const hudR = document.getElementById('hudR');
     let gen = 0; // generation counter: stale timeouts can't touch the UI
 
+    // --- i18n: RU default, EN one tap away (spec 20261106-russian-default) ---
+    const STRINGS = {
+      ru: {
+        docTitle: 'Стрела — игра на реакцию',
+        name: 'Стрела',
+        figures: 'Фигурок на сторону',
+        duration: 'Время стрелы (сек)',
+        start: 'Старт',
+        left: 'слева',
+        right: 'справа',
+        over: 'Игра окончена',
+        count: 'Посчитайте свои фигурки — победит тот, у кого больше!',
+        again: 'Ещё раз',
+        settings: 'Настройки',
+      },
+      en: {
+        docTitle: 'Arrow — reaction game',
+        name: 'Arrow',
+        figures: 'Figures per side',
+        duration: 'Arrow duration (s)',
+        start: 'Start',
+        left: 'left',
+        right: 'right',
+        over: 'Game over',
+        count: 'Count your figures — most wins!',
+        again: 'Play again',
+        settings: 'Settings',
+      },
+    };
+    let lang = 'ru';
+    const t = k => STRINGS[lang][k];
+    const otherLang = () => (lang === 'ru' ? 'en' : 'ru');
+
     // WebAudio: one beep tone, no assets. Context is unlocked on the start tap.
     let audio = null;
     function unlockAudio() {
@@ -111,8 +150,8 @@
     }
     function showBlank() { screen.innerHTML = ''; }
     function setHud(left, right) {
-      hudL.textContent = 'left ' + left;
-      hudR.textContent = 'right ' + right;
+      hudL.textContent = t('left') + ' ' + left;
+      hudR.textContent = t('right') + ' ' + right;
     }
     function panel(html) {
       const div = document.createElement('div');
@@ -123,18 +162,21 @@
       return div;
     }
 
-    function showSetup() {
+    function showSetup(figs = FIGS_DEFAULT, dur = DURATION_DEFAULT) {
       gen++;
       hud.classList.remove('on');
+      langBtn.textContent = otherLang().toUpperCase();
+      document.title = t('docTitle');
+      langBtn.style.display = 'block';
       const p = panel(
-        '<h1>Arrow</h1>' +
-        '<label>Figures per side: <span class="val" id="vFigs"></span></label>' +
+        '<h1>' + t('name') + '</h1>' +
+        '<label>' + t('figures') + ': <span class="val" id="vFigs"></span></label>' +
         '<input type="range" id="sFigs" min="' + FIGS_MIN + '" max="' + FIGS_MAX +
-        '" step="1" value="' + FIGS_DEFAULT + '">' +
-        '<label>Arrow duration (s): <span class="val" id="vDur"></span></label>' +
+        '" step="1" value="' + figs + '">' +
+        '<label>' + t('duration') + ': <span class="val" id="vDur"></span></label>' +
         '<input type="range" id="sDur" min="' + DURATION_MIN + '" max="' + DURATION_MAX +
-        '" step="0.5" value="' + DURATION_DEFAULT + '">' +
-        '<br><button class="btn" id="bStart">Start</button>'
+        '" step="0.5" value="' + dur + '">' +
+        '<br><button class="btn" id="bStart">' + t('start') + '</button>'
       );
       const sFigs = p.querySelector('#sFigs');
       const sDur = p.querySelector('#sDur');
@@ -153,17 +195,19 @@
 
     function showGameOver(again) {
       hud.classList.remove('on');
+      langBtn.style.display = 'none';
       const p = panel(
-        '<h1>Game over</h1>' +
-        '<p class="sub">Count your figures — most wins!</p>' +
-        '<button class="btn" id="bAgain">Play again</button><br>' +
-        '<button class="btn secondary" id="bSetup">Settings</button>'
+        '<h1>' + t('over') + '</h1>' +
+        '<p class="sub">' + t('count') + '</p>' +
+        '<button class="btn" id="bAgain">' + t('again') + '</button><br>' +
+        '<button class="btn secondary" id="bSetup">' + t('settings') + '</button>'
       );
       p.querySelector('#bAgain').addEventListener('click', again);
       p.querySelector('#bSetup').addEventListener('click', showSetup);
     }
 
     async function runGame(figuresPerSide, arrowSec) {
+      langBtn.style.display = 'none';
       const g = ++gen;
       const total = totalArrows(figuresPerSide);
       let left = figuresPerSide;
@@ -196,6 +240,18 @@
         }
       }
     }
+
+    const langBtn = document.getElementById('langBtn');
+    langBtn.addEventListener('click', () => {
+      lang = otherLang();
+      // re-render setup in the new language, preserving slider values
+      const sF = screen.querySelector('#sFigs');
+      const sD = screen.querySelector('#sDur');
+      showSetup(
+        sF ? parseInt(sF.value, 10) : FIGS_DEFAULT,
+        sD ? parseFloat(sD.value) : DURATION_DEFAULT
+      );
+    });
 
     showSetup();
   </script>
