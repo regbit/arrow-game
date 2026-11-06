@@ -3,9 +3,9 @@ type: Reference
 title: "Game loop"
 description: "The round flow: setup, 3-2-1 countdown, timed left/right arrows, quick blank, physical scoring."
 tags: [design, gameplay]
-status: draft
+status: stable
 generated: { by: human:regbit, at: 2026-11-06T18:30:00Z }
-updated: { by: human:regbit, at: 2026-11-06T19:00:00Z }
+updated: { by: human:regbit, at: 2026-11-06T20:00:00Z }
 ---
 
 # Quick Reference
@@ -68,8 +68,8 @@ Pure functions in a sentinel-marked block in `index.html`:
 
 ## Working With This
 
-Draft until spec `20261106-core-round-loop` is implemented and
-live-verified on a phone; then promote to `stable`.
+Live-verified on a phone 2026-11-06 (owner, positive feedback); specs
+`20261106-core-round-loop` and `20261106-russian-default` are archived.
 
 Deferred (see `.specs/deferred.md`): in-game score tracking, in-game
 tiebreak, landscape mode, sounds beyond the beep, settings persistence.

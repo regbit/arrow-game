@@ -1,7 +1,7 @@
 # Change: Core round loop
 
 **ID:** 20261106-core-round-loop
-**Status:** approved (implemented; live DoD pending)
+**Status:** done (live-verified on a phone 2026-11-06, positive feedback)
 **Vision ref:** .specs/vision.md — Core experience, In Scope (v1)
 **Design ref:** okf/concepts/game-loop.md
 **Date:** 2026-11-06

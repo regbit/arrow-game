@@ -10,7 +10,7 @@ okf_version: "0.2"
 
 ## Concepts
 
-* [Game loop (draft design)](/concepts/game-loop.md) - The round flow: setup sliders, black-screen guard, arrow flash, figure grab.
+* [Game loop](/concepts/game-loop.md) - The round flow: setup, 3-2-1 countdown, timed left/right arrows, quick blank, physical scoring.
 
 ## Playbooks
 

@@ -1,7 +1,7 @@
 # Russian language (default) + RU/EN switch
 
 **ID:** 20261106-russian-default
-**Status:** approved (owner request, 2026-11-06)
+**Status:** done (live-verified on a phone 2026-11-06, positive feedback)
 
 ## Why
 
