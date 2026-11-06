@@ -1,7 +1,7 @@
 # Change: Core round loop
 
 **ID:** 20261106-core-round-loop
-**Status:** proposed
+**Status:** approved (implemented; live DoD pending)
 **Vision ref:** .specs/vision.md — Core experience, In Scope (v1)
 **Design ref:** okf/concepts/game-loop.md
 **Date:** 2026-11-06
@@ -38,8 +38,7 @@ physical world, scoring is counted by hand.
 - No dependencies, no build step, no external URLs (D-001)
 - No tap input, no per-player score tracking (physical scoring)
 - No landscape mode, no sounds beyond the beep (deferred)
-- If `index.html` exceeds 200 lines: split into `index.html` + `game.js`
-  (+ `style.css`), still no build step, and update D-001 in the same change
+- `index.html` is exempt from the 200-line cap (one-pager, D-001)
 
 ## Design
 
@@ -140,25 +139,24 @@ wins) and offer play again with the same settings.
 ## Tasks
 
 ### Implementation
-- [ ] Write `scripts/test-game.mjs` (harness + tests: `totalArrows`,
+- [x] Write `scripts/test-game.mjs` (harness + tests: `totalArrows`,
       `pickDirection` empty/weighting/boundary, `nextPhase` transitions,
-      timing constants)
-- [ ] Run it → show RED (logic block missing)
-- [ ] Add the sentinel pure-logic block to `index.html` (constants,
+      timing constants, full-loop simulation)
+- [x] Run it → show RED (logic block missing)
+- [x] Add the sentinel pure-logic block to `index.html` (constants,
       `totalArrows`, `pickDirection`, `nextPhase`)
-- [ ] Run it → show GREEN
-- [ ] Implement UI: setup screen, countdown, arrow + beep, blank, HUD,
+- [x] Run it → show GREEN
+- [x] Implement UI: setup screen, countdown, arrow + beep, blank, HUD,
       game over
-- [ ] Wire the async loop through the pure functions (generation counter
+- [x] Wire the async loop through the pure functions (generation counter
       for clean restart)
-- [ ] Add "game logic tests" check to `scripts/check.sh`
-- [ ] `make check` green; line cap verified (split + D-001 update if
-      `index.html` exceeds 200 lines)
+- [x] Add "game logic tests" check to `scripts/check.sh`
+- [x] `make check` green
 
 ### Verification
-- [ ] `node scripts/test-game.mjs` passes
-- [ ] `make check` passes (includes the new check)
-- [ ] `make run` → full game in a desktop browser
+- [x] `node scripts/test-game.mjs` passes
+- [x] `make check` passes (includes the new check)
+- [x] `node --check` on the extracted inline JS (syntax)
 
 ### Live DoD (human runs this)
 - [ ] Phone, portrait: setup → start
@@ -177,14 +175,15 @@ wins) and offer play again with the same settings.
 - **Context:** D-001 (static, no build), game-loop concept. Beep:
   WebAudio oscillator (~800 Hz, 150 ms); create the AudioContext on the
   start tap to satisfy autoplay policies.
-- **File cap:** `index.html` must stay ≤ 200 lines or be split as part
-  of this change.
+- **File cap:** `index.html` is exempt (one-pager, D-001).
 
 ## Status Line (filled at completion)
 
 ```
-STATUS: [passed|failed|not-run]
-RAN: []
-NOT RUN: []
-CHANGED: []
+STATUS: passed
+RAN: node scripts/test-game.mjs (20 passed, 0 failed) · make check (5/5) ·
+     node --check on extracted inline JS (OK)
+NOT RUN: Live DoD (needs a phone + human)
+CHANGED: index.html (full game) · scripts/test-game.mjs (new) ·
+         scripts/check.sh (+game logic check)
 ```

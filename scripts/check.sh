@@ -29,7 +29,7 @@ echo ""
 
 # --- Project checks ---
 # Static single-file game (D-001): no test runner, no linter. Checks
-# validate the HTML file directly. Add runtime checks when game code lands.
+# validate the HTML file directly; game logic is unit-tested by plain node.
 
 # index.html exists and is non-trivial
 if [ -f "index.html" ]; then
@@ -62,6 +62,17 @@ if [ -f "index.html" ] && head -1 index.html | grep -qi '<!doctype html>' && gre
   report pass "HTML sanity"
 else
   report fail "HTML sanity" "missing doctype or </html>"
+fi
+
+# game logic tests (plain node, no deps)
+if command -v node >/dev/null 2>&1; then
+  if output=$(node scripts/test-game.mjs 2>&1); then
+    report pass "game logic tests ($(echo "$output" | tail -n 1))"
+  else
+    report fail "game logic tests" "$output"
+  fi
+else
+  report skip "game logic tests (node not installed)"
 fi
 
 # --- Summary ---

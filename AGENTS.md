@@ -14,7 +14,7 @@
 ### Task Boundaries
 
 - Every task is **bounded**. Before editing, present a short plan: files to touch, what changes, and the order. **Wait for approval** before touching anything (unless the task is a trivial single-file edit).
-- **File size cap (hard).** Docs and code files must not exceed 200 lines. A file over 200 lines that is being edited must be split into smaller files as part of that edit. Prefer many small files over a few large ones.
+- **File size cap (hard).** Docs and code files must not exceed 200 lines. A file over 200 lines that is being edited must be split into smaller files as part of that edit. Prefer many small files over a few large ones. **Exception:** `index.html` is an intentional one-pager (D-001) and is exempt from the line cap — the single-file form is worth more than a size limit (owner decision, 2026-11-06).
 - **Iteration cap (hard).** One iteration = one logical change, targeting ≤ ~200 lines of diff. If a planned change would exceed that, or spans multiple domains, stop and propose a split plan before proceeding.
 - Do not broaden scope after inspection unless I explicitly accept the expansion.
 - If a task seems to need something outside the stated scope (schema change, new dependency, config change), **stop and ask**.

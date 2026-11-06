@@ -32,8 +32,9 @@ directly from the `main` branch root.
 
 ## Consequences
 
-- `index.html` will grow. If it becomes unwieldy (rule of thumb: ~500
-  lines), split into `game.js` / `style.css` — still no build step.
+- `index.html` is exempt from the 200-line file cap in AGENTS.md — the
+  one-pager form is the decision; no split is planned (owner decision,
+  2026-11-06, amending this decision's earlier ~500-line split rule).
 - No bundler, no framework, no npm. Local dev is `make run` (a static
   file server).
 - `make check` validates static properties of the HTML; runtime checks

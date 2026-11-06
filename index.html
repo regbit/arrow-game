@@ -8,21 +8,196 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; }
     body {
-      display: flex; align-items: center; justify-content: center;
+      display: flex; flex-direction: column; overflow: hidden;
       background: #111; color: #eee;
       font-family: system-ui, sans-serif;
       touch-action: manipulation;
       -webkit-user-select: none; user-select: none;
     }
-    .shell { text-align: center; padding: 2rem; }
-    .shell h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-    .shell p { opacity: 0.6; font-size: 0.9rem; }
+    #hud {
+      display: none; justify-content: space-between;
+      padding: 10px 20px; font-size: 1.1rem; color: #999;
+    }
+    #hud.on { display: flex; }
+    #screen {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      font-size: 7rem; font-weight: bold;
+    }
+    .arrow { font-size: 13rem; line-height: 1; }
+    .panel { text-align: center; padding: 2rem; font-size: 1rem; }
+    .panel h1 { font-size: 2.5rem; margin-bottom: 2rem; }
+    .panel label {
+      display: block; margin: 1.5rem auto 0.3rem; color: #aaa; width: 80%;
+    }
+    .panel .val { color: #fff; font-weight: bold; }
+    .panel input[type=range] { width: 80%; margin: 0 auto; display: block; }
+    .panel .btn {
+      margin-top: 2.5rem; font-size: 1.5rem; padding: 0.9rem 2.5rem;
+      border: 0; border-radius: 14px; background: #55dd88; color: #111;
+      font-weight: bold;
+    }
+    .panel .btn.secondary {
+      margin-top: 1rem; font-size: 1rem; background: #333; color: #ccc;
+    }
+    .panel p.sub { margin-top: 1.2rem; color: #aaa; font-size: 1.1rem; }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <h1>Arrow</h1>
-    <p>Reaction game — core loop coming next.</p>
-  </div>
+  <div id="hud"><span id="hudL"></span><span id="hudR"></span></div>
+  <div id="screen"></div>
+  <script>
+    // === pure game logic (tested by scripts/test-game.mjs) ===
+    const FIGS_MIN = 2, FIGS_MAX = 8, FIGS_DEFAULT = 4;
+    const DURATION_MIN = 1, DURATION_MAX = 5, DURATION_DEFAULT = 3;
+    const BLANK_MS = 500;
+    const COUNTDOWN_STEPS = 3;
+
+    function totalArrows(figureCountPerSide) { return 2 * figureCountPerSide; }
+
+    // Pick 'left' or 'right' weighted by remaining figures. rng: () => [0,1)
+    function pickDirection(remainingLeft, remainingRight, rng) {
+      const total = remainingLeft + remainingRight;
+      if (total === 0) return null;
+      if (remainingLeft === 0) return 'right';
+      if (remainingRight === 0) return 'left';
+      return rng() * total < remainingLeft ? 'left' : 'right';
+    }
+
+    // 'countdown' -> 'arrow' -> 'blank' -> ('arrow' | 'gameover')
+    function nextPhase(phase, arrowsFired, total) {
+      if (phase === 'countdown') return 'arrow';
+      if (phase === 'arrow') return 'blank';
+      if (phase === 'blank') return arrowsFired >= total ? 'gameover' : 'arrow';
+      return phase;
+    }
+    // === end pure game logic ===
+
+    // --- UI ---
+    const screen = document.getElementById('screen');
+    const hud = document.getElementById('hud');
+    const hudL = document.getElementById('hudL');
+    const hudR = document.getElementById('hudR');
+    let gen = 0; // generation counter: stale timeouts can't touch the UI
+
+    // WebAudio: one beep tone, no assets. Context is unlocked on the start tap.
+    let audio = null;
+    function unlockAudio() {
+      try {
+        if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+        if (audio.state === 'suspended') audio.resume();
+      } catch (err) { /* no audio: the game still works */ }
+    }
+    function beep() {
+      try {
+        unlockAudio();
+        if (!audio) return;
+        const osc = audio.createOscillator();
+        const gain = audio.createGain();
+        osc.type = 'square';
+        osc.frequency.value = 880;
+        gain.gain.value = 0.15;
+        osc.connect(gain);
+        gain.connect(audio.destination);
+        osc.start();
+        osc.stop(audio.currentTime + 0.15);
+      } catch (err) { /* no audio */ }
+    }
+
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    function showNumber(n) { screen.innerHTML = '<div>' + n + '</div>'; }
+    function showArrow(dir) {
+      screen.innerHTML = '<div class="arrow">' + (dir === 'left' ? '←' : '→') + '</div>';
+    }
+    function showBlank() { screen.innerHTML = ''; }
+    function setHud(left, right) {
+      hudL.textContent = 'left ' + left;
+      hudR.textContent = 'right ' + right;
+    }
+    function panel(html) {
+      const div = document.createElement('div');
+      div.className = 'panel';
+      div.innerHTML = html;
+      screen.innerHTML = '';
+      screen.appendChild(div);
+      return div;
+    }
+
+    function showSetup() {
+      gen++;
+      hud.classList.remove('on');
+      const p = panel(
+        '<h1>Arrow</h1>' +
+        '<label>Figures per side: <span class="val" id="vFigs"></span></label>' +
+        '<input type="range" id="sFigs" min="' + FIGS_MIN + '" max="' + FIGS_MAX +
+        '" step="1" value="' + FIGS_DEFAULT + '">' +
+        '<label>Arrow duration (s): <span class="val" id="vDur"></span></label>' +
+        '<input type="range" id="sDur" min="' + DURATION_MIN + '" max="' + DURATION_MAX +
+        '" step="0.5" value="' + DURATION_DEFAULT + '">' +
+        '<br><button class="btn" id="bStart">Start</button>'
+      );
+      const sFigs = p.querySelector('#sFigs');
+      const sDur = p.querySelector('#sDur');
+      const sync = () => {
+        p.querySelector('#vFigs').textContent = sFigs.value;
+        p.querySelector('#vDur').textContent = sDur.value;
+      };
+      sFigs.addEventListener('input', sync);
+      sDur.addEventListener('input', sync);
+      sync();
+      p.querySelector('#bStart').addEventListener('click', () => {
+        unlockAudio(); // user gesture: allowed to start audio from here on
+        runGame(parseInt(sFigs.value, 10), parseFloat(sDur.value));
+      });
+    }
+
+    function showGameOver(again) {
+      hud.classList.remove('on');
+      const p = panel(
+        '<h1>Game over</h1>' +
+        '<p class="sub">Count your figures — most wins!</p>' +
+        '<button class="btn" id="bAgain">Play again</button><br>' +
+        '<button class="btn secondary" id="bSetup">Settings</button>'
+      );
+      p.querySelector('#bAgain').addEventListener('click', again);
+      p.querySelector('#bSetup').addEventListener('click', showSetup);
+    }
+
+    async function runGame(figuresPerSide, arrowSec) {
+      const g = ++gen;
+      const total = totalArrows(figuresPerSide);
+      let left = figuresPerSide;
+      let right = figuresPerSide;
+      let fired = 0;
+      setHud(left, right);
+      hud.classList.add('on');
+
+      for (let n = COUNTDOWN_STEPS; n >= 1; n--) {
+        showNumber(n);
+        await sleep(1000);
+        if (g !== gen) return;
+      }
+
+      for (;;) {
+        const dir = pickDirection(left, right, Math.random);
+        fired++;
+        if (dir === 'left') left--; else right--;
+        setHud(left, right);
+        showArrow(dir);
+        beep();
+        await sleep(arrowSec * 1000);
+        if (g !== gen) return;
+        showBlank();
+        await sleep(BLANK_MS);
+        if (g !== gen) return;
+        if (nextPhase('blank', fired, total) === 'gameover') {
+          showGameOver(() => runGame(figuresPerSide, arrowSec));
+          return;
+        }
+      }
+    }
+
+    showSetup();
+  </script>
 </body>
 </html>
